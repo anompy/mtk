@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Challenge - Tebak Benar/Salah</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?57"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -332,6 +333,23 @@
                 max-width: 100%;
             }
         }
+        
+        /* Telegram Theme */
+        .telegram-bg {
+            background: linear-gradient(135deg, #0088cc, #3d7e9a);
+        }
+        
+        .telegram-btn {
+            background: linear-gradient(to right, #0088cc, #34b7f1);
+        }
+        
+        .telegram-highlight {
+            color: #34b7f1;
+        }
+        
+        .telegram-border {
+            border-color: #34b7f1;
+        }
     </style>
 </head>
 <body>
@@ -355,9 +373,15 @@
                     <div class="high-score-label">Selamat! Terus tingkatkan skormu</div>
                 </div>
                 
-                <button id="start-game" class="btn">
+                <button id="start-game" class="btn telegram-btn">
                     <i class="fas fa-play"></i> Mulai Bermain
                 </button>
+                
+                <div class="telegram-info">
+                    <p style="margin-top: 20px; color: #34b7f1; text-align: center;">
+                        <i class="fab fa-telegram"></i> Skor disimpan di Telegram Cloud
+                    </p>
+                </div>
             </div>
         </div>
         
@@ -404,10 +428,11 @@
                     <div class="time-bonus" id="time-bonus-info">
                         <i class="fas fa-clock"></i> Bonus waktu: +0 detik
                     </div>
+                    <div class="high-score-message" id="high-score-message" style="margin-top: 20px; color: #ffd700; font-weight: bold;"></div>
                 </div>
                 
                 <div class="action-buttons">
-                    <button id="play-again" class="btn">
+                    <button id="play-again" class="btn telegram-btn">
                         <i class="fas fa-redo"></i> Main Lagi
                     </button>
                     <button id="back-home" class="btn btn-secondary">
@@ -419,21 +444,43 @@
     </div>
 
     <script>
-        // Simulasi cloud storage untuk demo
+        // Inisialisasi Telegram Web App
+        const tg = window.Telegram.WebApp;
+        
+        // Cloud Storage untuk Telegram Web App
         const cloudStorage = {
-            highScore: localStorage.getItem('highScore') || 0,
+            storageKey: 'math_challenge_high_score',
             
-            getHighScore: function() {
-                return this.highScore;
+            getHighScore: function(callback) {
+                if (tg && tg.CloudStorage) {
+                    tg.CloudStorage.getItem(this.storageKey, (error, value) => {
+                        if (!error && value) {
+                            callback(parseInt(value));
+                        } else {
+                            callback(0);
+                        }
+                    });
+                } else {
+                    // Fallback untuk pengembangan lokal
+                    const score = localStorage.getItem(this.storageKey) || 0;
+                    callback(parseInt(score));
+                }
             },
             
-            saveHighScore: function(score) {
-                if (score > this.highScore) {
-                    this.highScore = score;
-                    localStorage.setItem('highScore', score);
-                    return true;
+            saveHighScore: function(score, callback) {
+                if (tg && tg.CloudStorage) {
+                    tg.CloudStorage.setItem(this.storageKey, score.toString(), (error) => {
+                        if (!error) {
+                            callback(true);
+                        } else {
+                            callback(false);
+                        }
+                    });
+                } else {
+                    // Fallback untuk pengembangan lokal
+                    localStorage.setItem(this.storageKey, score.toString());
+                    callback(true);
                 }
-                return false;
             }
         };
         
@@ -452,6 +499,7 @@
         const falseBtn = document.getElementById('false-btn');
         const finalScoreElement = document.getElementById('final-score');
         const timeBonusInfo = document.getElementById('time-bonus-info');
+        const highScoreMessage = document.getElementById('high-score-message');
         const playAgainBtn = document.getElementById('play-again');
         const backHomeBtn = document.getElementById('back-home');
         
@@ -460,6 +508,7 @@
         let timeLeft = 10;
         let gameTimer;
         let totalTimeAdded = 0;
+        let highScore = 0;
         
         // Fungsi untuk membuat soal matematika acak
         function generateMathProblem() {
@@ -604,10 +653,18 @@
             timeBonusInfo.innerHTML = `<i class="fas fa-clock"></i> Bonus waktu: +${totalTimeAdded} detik`;
             
             // Simpan skor ke cloud storage jika lebih tinggi
-            const highScore = parseInt(cloudStorage.getHighScore());
             if (currentScore > highScore) {
-                cloudStorage.saveHighScore(currentScore);
-                highScoreElement.textContent = currentScore;
+                cloudStorage.saveHighScore(currentScore, (success) => {
+                    if (success) {
+                        highScore = currentScore;
+                        highScoreMessage.innerHTML = `
+                            <i class="fas fa-trophy"></i> Skor Tertinggi Baru!
+                            <div style="font-size: 1.5rem; margin-top: 10px;">${currentScore} poin</div>
+                        `;
+                    }
+                });
+            } else {
+                highScoreMessage.textContent = `Skor tertinggi: ${highScore}`;
             }
             
             // Tampilkan score screen
@@ -639,6 +696,8 @@
         playAgainBtn.addEventListener('click', startGame);
         
         backHomeBtn.addEventListener('click', () => {
+            // Perbarui skor tinggi di home screen
+            highScoreElement.textContent = highScore;
             showScreen(homeScreen);
         });
         
@@ -646,13 +705,17 @@
         window.addEventListener('load', () => {
             // Simulasikan loading
             setTimeout(() => {
-                loadingScreen.classList.remove('active');
-                
                 // Ambil high score dari cloud storage
-                highScoreElement.textContent = cloudStorage.getHighScore();
-                
-                // Tampilkan home screen
-                showScreen(homeScreen);
+                cloudStorage.getHighScore((score) => {
+                    highScore = score;
+                    highScoreElement.textContent = highScore;
+                    
+                    // Sembunyikan loading screen
+                    loadingScreen.classList.remove('active');
+                    
+                    // Tampilkan home screen
+                    showScreen(homeScreen);
+                });
             }, 2000);
         });
     </script>
