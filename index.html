@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Challenge - Tebak Benar/Salah</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .screen {
+            padding: 30px;
+            display: none;
+            flex-direction: column;
+            min-height: 500px;
+        }
+        
+        .active {
+            display: flex;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .header h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #ff8a00, #da1b60);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .header p {
+            color: #ddd;
+            font-size: 1.1rem;
+        }
+        
+        .content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        /* Loading Screen */
+        #loading-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.9);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 100;
+        }
+        
+        .spinner {
+            width: 80px;
+            height: 80px;
+            border: 8px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            border-top-color: #ff8a00;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Home Screen */
+        .high-score-card {
+            background: linear-gradient(135deg, #2c3e50, #4a6491);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .high-score-card h2 {
+            font-size: 1.8rem;
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+        
+        .high-score-value {
+            font-size: 4rem;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+        
+        .high-score-label {
+            color: #aaa;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            background: linear-gradient(to right, #ff8a00, #da1b60);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 50px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            font-weight: bold;
+            width: 80%;
+            max-width: 300px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Game Screen */
+        .timer-container {
+            width: 150px;
+            height: 150px;
+            position: relative;
+            margin-bottom: 30px;
+        }
+        
+        .timer-circle {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .timer-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: conic-gradient(#00c9ff 0% var(--percent, 0%), #1a2a6c var(--percent, 0%) 100%);
+            z-index: 1;
+            transition: --percent 0.5s linear;
+        }
+        
+        .timer-text {
+            font-size: 3rem;
+            font-weight: bold;
+            color: white;
+            z-index: 2;
+            text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+        
+        .question-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 20px 0;
+            width: 100%;
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .score-display {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+        
+        .answer-buttons {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .answer-btn {
+            flex: 1;
+            max-width: 200px;
+            padding: 20px;
+            border-radius: 15px;
+            border: none;
+            color: white;
+            font-size: 1.4rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .true-btn {
+            background: linear-gradient(to right, #00b09b, #96c93d);
+        }
+        
+        .false-btn {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+        }
+        
+        .answer-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .answer-btn:active {
+            transform: translateY(0);
+        }
+        
+        /* Score Screen */
+        .result-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            width: 100%;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .result-title {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #ffd700;
+        }
+        
+        .final-score {
+            font-size: 6rem;
+            font-weight: bold;
+            color: white;
+            margin: 20px 0;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.7);
+        }
+        
+        .time-bonus {
+            color: #00c9ff;
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        /* Responsiveness */
+        @media (max-width: 500px) {
+            .screen {
+                padding: 20px;
+                min-height: 400px;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .question-box {
+                font-size: 2rem;
+                padding: 15px;
+            }
+            
+            .timer-container {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .timer-text {
+                font-size: 2.5rem;
+            }
+            
+            .answer-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .answer-btn {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="active">
+        <div class="spinner"></div>
+    </div>
+    
+    <div class="container">
+        <!-- Home Screen -->
+        <div id="home-screen" class="screen">
+            <div class="header">
+                <h1><i class="fas fa-calculator"></i> Math Challenge</h1>
+                <p>Tebak apakah soal matematika ini benar atau salah!</p>
+            </div>
+            
+            <div class="content">
+                <div class="high-score-card">
+                    <h2>Skor Tertinggi</h2>
+                    <div class="high-score-value" id="high-score">0</div>
+                    <div class="high-score-label">Selamat! Terus tingkatkan skormu</div>
+                </div>
+                
+                <button id="start-game" class="btn">
+                    <i class="fas fa-play"></i> Mulai Bermain
+                </button>
+            </div>
+        </div>
+        
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="header">
+                <h1><i class="fas fa-gamepad"></i> Math Challenge</h1>
+                <p class="score-display">Skor: <span id="current-score">0</span></p>
+            </div>
+            
+            <div class="content">
+                <div class="timer-container">
+                    <div class="timer-circle">
+                        <div class="timer-fill" id="timer-fill"></div>
+                        <div class="timer-text" id="timer">10</div>
+                    </div>
+                </div>
+                
+                <div class="question-box" id="question">
+                    15 + 7 = 22
+                </div>
+                
+                <div class="answer-buttons">
+                    <button class="answer-btn true-btn" id="true-btn">
+                        <i class="fas fa-check"></i> BENAR
+                    </button>
+                    <button class="answer-btn false-btn" id="false-btn">
+                        <i class="fas fa-times"></i> SALAH
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Score Screen -->
+        <div id="score-screen" class="screen">
+            <div class="header">
+                <h1><i class="fas fa-trophy"></i> Hasil Akhir</h1>
+            </div>
+            
+            <div class="content">
+                <div class="result-box">
+                    <div class="result-title">Skor Akhir Anda</div>
+                    <div class="final-score" id="final-score">0</div>
+                    <div class="time-bonus" id="time-bonus-info">
+                        <i class="fas fa-clock"></i> Bonus waktu: +0 detik
+                    </div>
+                </div>
+                
+                <div class="action-buttons">
+                    <button id="play-again" class="btn">
+                        <i class="fas fa-redo"></i> Main Lagi
+                    </button>
+                    <button id="back-home" class="btn btn-secondary">
+                        <i class="fas fa-home"></i> Kembali ke Home
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulasi cloud storage untuk demo
+        const cloudStorage = {
+            highScore: localStorage.getItem('highScore') || 0,
+            
+            getHighScore: function() {
+                return this.highScore;
+            },
+            
+            saveHighScore: function(score) {
+                if (score > this.highScore) {
+                    this.highScore = score;
+                    localStorage.setItem('highScore', score);
+                    return true;
+                }
+                return false;
+            }
+        };
+        
+        // DOM Elements
+        const loadingScreen = document.getElementById('loading-screen');
+        const homeScreen = document.getElementById('home-screen');
+        const gameScreen = document.getElementById('game-screen');
+        const scoreScreen = document.getElementById('score-screen');
+        const highScoreElement = document.getElementById('high-score');
+        const startGameBtn = document.getElementById('start-game');
+        const currentScoreElement = document.getElementById('current-score');
+        const questionElement = document.getElementById('question');
+        const timerElement = document.getElementById('timer');
+        const timerFill = document.getElementById('timer-fill');
+        const trueBtn = document.getElementById('true-btn');
+        const falseBtn = document.getElementById('false-btn');
+        const finalScoreElement = document.getElementById('final-score');
+        const timeBonusInfo = document.getElementById('time-bonus-info');
+        const playAgainBtn = document.getElementById('play-again');
+        const backHomeBtn = document.getElementById('back-home');
+        
+        // Game variables
+        let currentScore = 0;
+        let timeLeft = 10;
+        let gameTimer;
+        let totalTimeAdded = 0;
+        
+        // Fungsi untuk membuat soal matematika acak
+        function generateMathProblem() {
+            const operations = ['+', '-', '*'];
+            const operation = operations[Math.floor(Math.random() * operations.length)];
+            
+            let num1, num2, correctAnswer;
+            
+            switch(operation) {
+                case '+':
+                    num1 = Math.floor(Math.random() * 50) + 1;
+                    num2 = Math.floor(Math.random() * 50) + 1;
+                    correctAnswer = num1 + num2;
+                    break;
+                case '-':
+                    num1 = Math.floor(Math.random() * 50) + 20;
+                    num2 = Math.floor(Math.random() * 20) + 1;
+                    // Pastikan hasilnya positif
+                    if (num1 < num2) [num1, num2] = [num2, num1];
+                    correctAnswer = num1 - num2;
+                    break;
+                case '*':
+                    num1 = Math.floor(Math.random() * 10) + 1;
+                    num2 = Math.floor(Math.random() * 10) + 1;
+                    correctAnswer = num1 * num2;
+                    break;
+            }
+            
+            // Tentukan apakah soal akan benar atau salah
+            const isCorrect = Math.random() > 0.5;
+            let displayedAnswer = correctAnswer;
+            
+            if (!isCorrect) {
+                // Buat jawaban salah dengan menambahkan/mengurangi nilai acak
+                const offset = Math.floor(Math.random() * 5) + 1;
+                displayedAnswer = Math.random() > 0.5 ? 
+                    correctAnswer + offset : 
+                    Math.max(1, correctAnswer - offset);
+            }
+            
+            return {
+                question: `${num1} ${operation} ${num2} = ${displayedAnswer}`,
+                isCorrect: isCorrect
+            };
+        }
+        
+        // Fungsi untuk memulai game
+        function startGame() {
+            // Reset game state
+            currentScore = 0;
+            timeLeft = 10;
+            totalTimeAdded = 0;
+            currentScoreElement.textContent = currentScore;
+            updateTimerDisplay();
+            
+            // Generate soal pertama
+            generateNewProblem();
+            
+            // Tampilkan game screen
+            showScreen(gameScreen);
+            
+            // Mulai timer
+            startTimer();
+        }
+        
+        // Fungsi untuk membuat soal baru
+        function generateNewProblem() {
+            const problem = generateMathProblem();
+            questionElement.textContent = problem.question;
+            questionElement.dataset.isCorrect = problem.isCorrect;
+        }
+        
+        // Fungsi untuk memulai timer
+        function startTimer() {
+            clearInterval(gameTimer);
+            
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(gameTimer);
+                    endGame();
+                }
+            }, 1000);
+        }
+        
+        // Fungsi untuk memperbarui tampilan timer
+        function updateTimerDisplay() {
+            timerElement.textContent = timeLeft;
+            const percentage = (timeLeft / 10) * 100;
+            timerFill.style.setProperty('--percent', `${percentage}%`);
+            
+            // Ubah warna timer saat waktu hampir habis
+            if (timeLeft <= 3) {
+                timerFill.style.background = 
+                    `conic-gradient(#ff416c 0% ${percentage}%, #1a2a6c ${percentage}% 100%)`;
+            } else {
+                timerFill.style.background = 
+                    `conic-gradient(#00c9ff 0% ${percentage}%, #1a2a6c ${percentage}% 100%)`;
+            }
+        }
+        
+        // Fungsi untuk menambah waktu
+        function addTime(seconds) {
+            timeLeft += seconds;
+            totalTimeAdded += seconds;
+            updateTimerDisplay();
+        }
+        
+        // Fungsi untuk mengecek jawaban
+        function checkAnswer(userAnswer) {
+            const isCorrect = questionElement.dataset.isCorrect === 'true';
+            
+            if (userAnswer === isCorrect) {
+                // Jawaban benar
+                currentScore++;
+                currentScoreElement.textContent = currentScore;
+                addTime(3); // Tambah waktu 3 detik
+                
+                // Animasi feedback
+                questionElement.style.backgroundColor = 'rgba(0, 200, 0, 0.3)';
+                setTimeout(() => {
+                    questionElement.style.backgroundColor = '';
+                }, 300);
+            } else {
+                // Jawaban salah
+                questionElement.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
+                setTimeout(() => {
+                    questionElement.style.backgroundColor = '';
+                }, 300);
+            }
+            
+            // Buat soal baru
+            generateNewProblem();
+        }
+        
+        // Fungsi ketika game berakhir
+        function endGame() {
+            // Tampilkan skor akhir
+            finalScoreElement.textContent = currentScore;
+            timeBonusInfo.innerHTML = `<i class="fas fa-clock"></i> Bonus waktu: +${totalTimeAdded} detik`;
+            
+            // Simpan skor ke cloud storage jika lebih tinggi
+            const highScore = parseInt(cloudStorage.getHighScore());
+            if (currentScore > highScore) {
+                cloudStorage.saveHighScore(currentScore);
+                highScoreElement.textContent = currentScore;
+            }
+            
+            // Tampilkan score screen
+            showScreen(scoreScreen);
+        }
+        
+        // Fungsi untuk menampilkan screen tertentu
+        function showScreen(screen) {
+            // Sembunyikan semua screen
+            homeScreen.classList.remove('active');
+            gameScreen.classList.remove('active');
+            scoreScreen.classList.remove('active');
+            
+            // Tampilkan screen yang dipilih
+            screen.classList.add('active');
+        }
+        
+        // Event Listeners
+        startGameBtn.addEventListener('click', startGame);
+        
+        trueBtn.addEventListener('click', () => {
+            checkAnswer(true);
+        });
+        
+        falseBtn.addEventListener('click', () => {
+            checkAnswer(false);
+        });
+        
+        playAgainBtn.addEventListener('click', startGame);
+        
+        backHomeBtn.addEventListener('click', () => {
+            showScreen(homeScreen);
+        });
+        
+        // Inisialisasi
+        window.addEventListener('load', () => {
+            // Simulasikan loading
+            setTimeout(() => {
+                loadingScreen.classList.remove('active');
+                
+                // Ambil high score dari cloud storage
+                highScoreElement.textContent = cloudStorage.getHighScore();
+                
+                // Tampilkan home screen
+                showScreen(homeScreen);
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
