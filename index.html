@@ -445,7 +445,9 @@
 
     <script>
         // Inisialisasi Telegram Web App
-        const tg = window.Telegram.WebApp;
+        const tg = Telegram.WebApp;
+        tg.ready();
+        
         
         // Cloud Storage untuk Telegram Web App
         const cloudStorage = {
