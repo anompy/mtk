@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Math Challenge - Tebak Benar/Salah</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?57"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * {
@@ -22,6 +21,7 @@
             align-items: center;
             padding: 20px;
             color: #fff;
+            overflow: hidden;
         }
         
         .container {
@@ -33,6 +33,12 @@
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            animation: fadeIn 0.8s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .screen {
@@ -74,33 +80,6 @@
             align-items: center;
         }
         
-        /* Loading Screen */
-        #loading-screen {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.9);
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 100;
-        }
-        
-        .spinner {
-            width: 80px;
-            height: 80px;
-            border: 8px solid rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            border-top-color: #ff8a00;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
         /* Home Screen */
         .high-score-card {
             background: linear-gradient(135deg, #2c3e50, #4a6491);
@@ -110,6 +89,13 @@
             width: 100%;
             text-align: center;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+            100% { transform: scale(1); }
         }
         
         .high-score-card h2 {
@@ -207,6 +193,10 @@
             font-weight: bold;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             border: 2px solid rgba(255, 255, 255, 0.2);
+            min-height: 150px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .score-display {
@@ -312,6 +302,7 @@
             .question-box {
                 font-size: 2rem;
                 padding: 15px;
+                min-height: 120px;
             }
             
             .timer-container {
@@ -334,33 +325,33 @@
             }
         }
         
-        /* Telegram Theme */
-        .telegram-bg {
-            background: linear-gradient(135deg, #0088cc, #3d7e9a);
+        /* Game Info */
+        .game-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9rem;
         }
         
-        .telegram-btn {
-            background: linear-gradient(to right, #0088cc, #34b7f1);
+        .highlight {
+            color: #ffd700;
+            font-weight: bold;
         }
         
-        .telegram-highlight {
-            color: #34b7f1;
-        }
-        
-        .telegram-border {
-            border-color: #34b7f1;
+        /* Animation for correct/incorrect answers */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
     </style>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="loading-screen" class="active">
-        <div class="spinner"></div>
-    </div>
-    
     <div class="container">
         <!-- Home Screen -->
-        <div id="home-screen" class="screen">
+        <div id="home-screen" class="screen active">
             <div class="header">
                 <h1><i class="fas fa-calculator"></i> Math Challenge</h1>
                 <p>Tebak apakah soal matematika ini benar atau salah!</p>
@@ -373,14 +364,14 @@
                     <div class="high-score-label">Selamat! Terus tingkatkan skormu</div>
                 </div>
                 
-                <button id="start-game" class="btn telegram-btn">
+                <button id="start-game" class="btn">
                     <i class="fas fa-play"></i> Mulai Bermain
                 </button>
                 
-                <div class="telegram-info">
-                    <p style="margin-top: 20px; color: #34b7f1; text-align: center;">
-                        <i class="fab fa-telegram"></i> Skor disimpan di Telegram Cloud
-                    </p>
+                <div class="game-info">
+                    <p>⏱️ Waktu awal: <span class="highlight">10 detik</span></p>
+                    <p>➕ Bonus waktu: <span class="highlight">+3 detik</span> untuk jawaban benar</p>
+                    <p>🏆 Skor disimpan selama sesi ini</p>
                 </div>
             </div>
         </div>
@@ -432,7 +423,7 @@
                 </div>
                 
                 <div class="action-buttons">
-                    <button id="play-again" class="btn telegram-btn">
+                    <button id="play-again" class="btn">
                         <i class="fas fa-redo"></i> Main Lagi
                     </button>
                     <button id="back-home" class="btn btn-secondary">
@@ -444,50 +435,7 @@
     </div>
 
     <script>
-        // Inisialisasi Telegram Web App
-        const tg = Telegram.WebApp;
-        tg.ready();
-        
-        
-        // Cloud Storage untuk Telegram Web App
-        const cloudStorage = {
-            storageKey: 'math_challenge_high_score',
-            
-            getHighScore: function(callback) {
-                if (tg && tg.CloudStorage) {
-                    tg.CloudStorage.getItem(this.storageKey, (error, value) => {
-                        if (!error && value) {
-                            callback(parseInt(value));
-                        } else {
-                            callback(0);
-                        }
-                    });
-                } else {
-                    // Fallback untuk pengembangan lokal
-                    const score = localStorage.getItem(this.storageKey) || 0;
-                    callback(parseInt(score));
-                }
-            },
-            
-            saveHighScore: function(score, callback) {
-                if (tg && tg.CloudStorage) {
-                    tg.CloudStorage.setItem(this.storageKey, score.toString(), (error) => {
-                        if (!error) {
-                            callback(true);
-                        } else {
-                            callback(false);
-                        }
-                    });
-                } else {
-                    // Fallback untuk pengembangan lokal
-                    localStorage.setItem(this.storageKey, score.toString());
-                    callback(true);
-                }
-            }
-        };
-        
         // DOM Elements
-        const loadingScreen = document.getElementById('loading-screen');
         const homeScreen = document.getElementById('home-screen');
         const gameScreen = document.getElementById('game-screen');
         const scoreScreen = document.getElementById('score-screen');
@@ -619,6 +567,12 @@
             timeLeft += seconds;
             totalTimeAdded += seconds;
             updateTimerDisplay();
+            
+            // Animasi feedback untuk jawaban benar
+            questionElement.style.animation = 'pulse 0.5s';
+            setTimeout(() => {
+                questionElement.style.animation = '';
+            }, 500);
         }
         
         // Fungsi untuk mengecek jawaban
@@ -654,19 +608,18 @@
             finalScoreElement.textContent = currentScore;
             timeBonusInfo.innerHTML = `<i class="fas fa-clock"></i> Bonus waktu: +${totalTimeAdded} detik`;
             
-            // Simpan skor ke cloud storage jika lebih tinggi
+            // Reset pesan skor tinggi
+            highScoreMessage.innerHTML = '';
+            
+            // Cek apakah skor ini adalah skor tertinggi
             if (currentScore > highScore) {
-                cloudStorage.saveHighScore(currentScore, (success) => {
-                    if (success) {
-                        highScore = currentScore;
-                        highScoreMessage.innerHTML = `
-                            <i class="fas fa-trophy"></i> Skor Tertinggi Baru!
-                            <div style="font-size: 1.5rem; margin-top: 10px;">${currentScore} poin</div>
-                        `;
-                    }
-                });
-            } else {
-                highScoreMessage.textContent = `Skor tertinggi: ${highScore}`;
+                highScore = currentScore;
+                highScoreMessage.innerHTML = `
+                    <i class="fas fa-trophy"></i> Skor Tertinggi Baru!
+                    <div style="font-size: 1.5rem; margin-top: 10px;">${currentScore} poin</div>
+                `;
+            } else if (highScore > 0) {
+                highScoreMessage.innerHTML = `Skor tertinggi sesi ini: ${highScore}`;
             }
             
             // Tampilkan score screen
@@ -701,24 +654,6 @@
             // Perbarui skor tinggi di home screen
             highScoreElement.textContent = highScore;
             showScreen(homeScreen);
-        });
-        
-        // Inisialisasi
-        window.addEventListener('load', () => {
-            // Simulasikan loading
-            setTimeout(() => {
-                // Ambil high score dari cloud storage
-                cloudStorage.getHighScore((score) => {
-                    highScore = score;
-                    highScoreElement.textContent = highScore;
-                    
-                    // Sembunyikan loading screen
-                    loadingScreen.classList.remove('active');
-                    
-                    // Tampilkan home screen
-                    showScreen(homeScreen);
-                });
-            }, 2000);
         });
     </script>
 </body>
