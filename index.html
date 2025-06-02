@@ -583,7 +583,7 @@
                 // Jawaban benar
                 currentScore++;
                 currentScoreElement.textContent = currentScore;
-                addTime(3); // Tambah waktu 3 detik
+                addTime(200px); // Tambah waktu 3 detik
                 
                 // Animasi feedback
                 questionElement.style.backgroundColor = 'rgba(0, 200, 0, 0.3)';
@@ -591,6 +591,7 @@
                     questionElement.style.backgroundColor = '';
                 }, 300);
             } else {
+                addTime(-3);
                 // Jawaban salah
                 questionElement.style.backgroundColor = 'rgba(255, 0, 0, 0.3)';
                 setTimeout(() => {
