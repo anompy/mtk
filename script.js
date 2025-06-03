@@ -194,9 +194,9 @@ function endGame() {
     if (currentScore > highScore) {
         highScore = currentScore;
         
-          telegram.CloudStorage.setItem('math_height_score', currentScore, (error, is_stored) => {
+          telegram.CloudStorage.setItem('math_high_score', currentScore, (error, is_stored) => {
               if (!is_stored) telegram.showAlert(error);
-          }
+          });
         
         highScoreMessage.innerHTML = `
                     <i class="fas fa-trophy"></i> Skor Tertinggi Baru!
@@ -249,7 +249,7 @@ window.addEventListener('load', (event) => {
         progress += Math.floor(Math.random() * 100) + 1;
     }, 1000);
     
-    telegram.CloudStorage.getItem('math_height_score', (error, value) => {
+    telegram.CloudStorage.getItem('math_high_score', (error, value) => {
         highScore = value;
     });
 
