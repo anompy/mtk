@@ -251,7 +251,7 @@ window.addEventListener('load', (event) => {
     
     telegram.CloudStorage.getItem('math_high_score', (error, value) => {
         highScore = value;
-        highScoreElement.textContent = highScore || 0;
+        highScoreElement.textContent = highScore || '0';
     });
 
     bindEvent();
